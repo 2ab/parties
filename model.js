@@ -42,24 +42,41 @@ Meteor.methods({
   // title, description, x, y, public
   createParty:function(options){
     options = options || {};
-    if (! (typeof options.title === "string" && options.title.length && typeof options.description === "string" && options.description.length && typeof options.x >=0 && options.x <= 1 && options.y >= 0 && options.y <= 1 ))
+    if (! (typeof options.title === "string" && options.title.length &&
+           typeof options.description === "string" && options.description.length &&
+           typeof options.x === "number" && options.x >=0 && options.x <= 1 && 
+           typeof options.y === "number" && options.y >= 0 && options.y <= 1 ))
       throw new Meteor.Error(400, "Required parameter missing");
     if (! this.userId)
-      throw new Meteor.Error(403, "You must be logged in")
+      throw new Meteor.Error(403, "You must be logged in");
+      
+    Parties.insert({
+      owner: this.userId,
+      x: options.x,
+      y: options.y,
+      title: options.title,
+      description: option.description,
+      attending: 0,
+      public: options.public,
+      canSee: []
+    });
   },
   
   rsvp: function(partyId, rsvp){
-    if (! this.userID)
+    if (! this.userId)
       throw new Meteor.Error(403, "You must be logged in to RSVP");
     if (! _.contains(['yes', 'no', 'maybe'], rsvp))
       throw new Meteor.Error(400, "Invalid RSVP");
     
     var oldAttendance;
-    var attendance = (rsvp === "yes") ? 1 : 0;
+    var attendance = (rsvp === 'yes') ? 1 : 0;
     
     var record = Rsvps.findOne({user: this.userId, party: partyId});
     if (record){
       var oldAttendance = (record.rsvp === 'yes') ? 1 : 0;
+      Rsvps.update(record._id, {$set: {rsvp: rsvp}});
+    } else {
+      oldAttendance = 0;
       Rsvps.insert({user: this.userId, party: partyId, rsvp: rsvp});
     }
     

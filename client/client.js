@@ -95,7 +95,7 @@ Template.map.rendered = function(){
   var self = this;
   self.node = this.find("svg");
   if (! self.handle) {
-    self.handle = Meteor._autorun(function(){
+    self.handle = Meteor.autorun(function(){
       var marker = d3.select(self.node).select(".circles").selectAll("circle")
         .data(Parties.find().fetch(),
           function(party) { return party._id });
@@ -108,7 +108,7 @@ Template.map.rendered = function(){
         .attr("id", function(party){ return party._id })
         .attr("cx", function(party){ return party.x * 500})
         .attr("cy", function(party){ return party.y * 500})
-        .arrt("r", function(party){ return 10+ party.attending * 10})
+        .arrt("r", function(party){ return 10 + party.attending * 10})
         .style("fill", function(party){ return party.public ? "red" : "blue"});
         
       marker.transition()
@@ -132,7 +132,7 @@ Template.map.rendered = function(){
         .attr("y", function(party){ return party.y * 500 })
         .text(function(party){ return party.attending});
         
-      label.exit().remove();
+      labels.exit().remove();
     });
   }
 }
@@ -149,7 +149,7 @@ Template.createDialog.events = {
   'click .save': function (event, template) {
     var title = template.find(".title").value;
     var description = template.find(".description").value;
-    if (title.length && description.lenght) {
+    if (title.length && description.length) {
       var coords = Session.get("createCoords");
       Meteor.call('createParty', {
         title: title,
