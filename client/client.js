@@ -1,6 +1,5 @@
 Meteor.subscribe("directory");
 Meteor.subscribe("parties");
-Meteor.subscribe("rsvps");
 
 Template.page.showCreateDialog = function(){
   return Session.get("showCreateDialog");
@@ -18,7 +17,7 @@ Template.details.party = function(){
   return Parties.findOne(Session.get("selected"));
 };
 
-Template.details.creatorName = function(){
+Template.details.creatorName = function () {
   var owner = Meteor.users.findOne(this.owner);
   if (! owner)
     return "unknown";
@@ -27,14 +26,19 @@ Template.details.creatorName = function(){
   return owner.emails[0].address;
 };
 
-Template.details.rsvps = function(){
-  return Parties.findOne(this._id).rsvps;
-};
-
-Template.details.rsvpEmail = function(){
+// RSVP subdocument looks like {user: userId, rsvp: "yes"}
+Template.details.rsvpEmail = function () {
   var user = Meteor.users.findOne(this.user);
   return user.emails[0].address;
 };
+
+Template.details.rsvpStatus = function () {
+  if (this.rsvp === "yes") return "Going";
+  if (this.rsvp === "maybe") return "Maybe";
+  return "No";
+};
+
+
 
 Template.details.outstandingInvitations = function () {
   var party = Parties.findOne(this._id);
@@ -43,17 +47,14 @@ Template.details.outstandingInvitations = function () {
   return Meteor.users.find({_id: {$in: people}});
 };
 
-Template.details.rsvpStatus = function(){
-  if (this.rsvp === "yes") return "Going";
-  if (this.rsvp === "maybe") return "Maybe";
-  return "No";
+Template.details.invitationEmail = function () {
+  return this.emails[0].address;
 };
-
 Template.details.canInvite = function () {
   return ! this.public && this.owner === Meteor.userId();
 };
 
-Template.details.canRemove = function(){
+Template.details.canRemove = function () {
   return this.owner === Meteor.userId() && attending(this) === 0;
 };
 

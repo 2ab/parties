@@ -7,8 +7,10 @@
 </body>
 
 <template name="page">
-  <h1>All Tomorrow Parties</h1>
   {{loginButtons}}
+
+  <h1>All Tomorrow Parties</h1>
+
   {{#if showCreateDialog}}
     {{> createDialog}}
   {{/if}}
@@ -94,7 +96,6 @@
           Everyone: invited<br>
         {{else}}
           {{#each outstandingInvitations}}
-            {{email}}: invited<br>
             {{invitationEmail}}: Invited<br>
           {{/each}}
           {{#if canInvite}}

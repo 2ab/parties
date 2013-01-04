@@ -4,7 +4,7 @@
   title, description: String
   public: Boolean
   invited: list of user id's that it's shared with, not including
-    the owner (ignore if public)
+    the owner (ignored if public)
   rsvps: XXX document, fields are 'user' and 'rsvp'
 */
 
@@ -72,7 +72,7 @@ Meteor.methods({
     });
   },
   
-  invite: function (patyId, userId) {
+  invite: function (partyId, userId) {
     var party = Parties.findOne(partyId);
     if (! party || party.owner !== this.userId)
       throw new Meteor.Error(404,"No such party");
@@ -80,7 +80,7 @@ Meteor.methods({
       throw new Meteor.Error(400,
                              "That party is public. No need to invite people.");
     if (userId !== paty.owner)
-      Parties.update(partyId, {$addTosSet: {invited: userId}});
+      Parties.update(partyId, {$addToSet: {invited: userId}});
   },
   
   rsvp: function(partyId, rsvp) {
@@ -90,7 +90,7 @@ Meteor.methods({
       throw new Meteor.Error(400, "Invalid RSVP");
     var party = Parties.findOne(partyId);
     if (! party)
-      throw new Meteor.Error(404, "No such party")
+      throw new Meteor.Error(404, "No such party");
     if (! party.public && party.owner !== this.userId && !_.contains(party.invited, this.userId))
       throw new Meteor.Error(403,"No such party");
     
