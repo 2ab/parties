@@ -8,12 +8,21 @@
 
 <template name="page">
   <h1>All Tomorrow Parties</h1>
+  {{loginButtons}}
   {{#if showCreateDialog}}
     {{> createDialog}}
   {{/if}}
   
+  {{#if showInviteDialog}}
+    {{> inviteDialog}}
+  {{/if}}
+  
   <div class="left-panel">
-    <p>Double click to post a party!</p>
+    {{# if currentUser}}
+      <p>Double click to post a party!</p>
+    {{else}}
+      <p>Sign in to post a party</p>
+    {{/if}}
     {{> map}}
   </div>
   
@@ -25,19 +34,33 @@
   <div class="popup">
     Create event<br>
     Title: <input type="text" class="title" /><br>
-    
-    Description<br>
-    <textarea class="description"></textarea><br>
-    
+    Description<br><textarea class="description"></textarea><br>
+    <input type="checkbox" class="private">Private party<br>
     <input type="button" value="Add" class="save" />
     <input type="button" value="Cancel" class="cancel" />
+  </div>
+</template>
+
+<template name="inviteDialog">
+  <div class="mask"></div>
+  <div class="popup">
+    Invite people<br>
+    
+    {{#each uninvited}}
+      {{email}}
+      <input type="button" value="Invite" class="invite" />
+    {{else}}
+      Everyone on the site is already invited.
+    {{/each}}
+    
+    <input type="button" value="Done" class="close" />
   </div>
 </template>
 
 <template name="map">
   <div class="map">
     {{#constant}}
-      <svg width="500" height="500">
+      <svg width="480" height="480">
         <g class="circles"></g>
         <g class="labels"></g>
       </svg>
@@ -51,12 +74,7 @@
     {{#if party}}
       {{#with party}}
         <h1>{{title}}</h1>
-        Posted by {{creatorName}} &mdash;
-        {{#if attending}}
-          {{attending}} confirmed guests
-        {{else}}
-          Nobody goging yet
-        {{/if}}<br>
+        Posted by {{creatorName}}<br>
         
         {{description}}<br>
         
@@ -77,14 +95,18 @@
         {{else}}
           {{#each outstandingInvitations}}
             {{email}}: invited<br>
+            {{invitationEmail}}: Invited<br>
           {{/each}}
+          {{#if canInvite}}
+            <input type="button" value="Invite some people" class="invite" /><br>
+          {{/if}}
         {{/if}}
         
         {{#if canRemove}}
-          <div><input type="button" value="Remove event" class="remove" /></div>
-        {{/if}}<br>
-        
-        XXX rsvps, invite editing (if private)
+          You posted this party and nobody is signed up to go, so if
+          you like, you could
+          <a href="#" class="remove">delete this listing</a>
+        {{/if}}
       {{/with}}
     {{else}}
       Click a party to select it

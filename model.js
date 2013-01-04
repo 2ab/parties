@@ -1,89 +1,121 @@
 /*
   owner: user id
-  x,y: Number (screen coordiantes)
+  x,y: Number (screen coordinates)
   title, description: String
-  attending: Number (count)
-  public: boolean
-  canSee: list of user id's that it's shared with (ignored if public)
+  public: Boolean
+  invited: list of user id's that it's shared with, not including
+    the owner (ignore if public)
+  rsvps: XXX document, fields are 'user' and 'rsvp'
 */
 
 Parties = new Meteor.Collection("parties");
 
 Parties.allow({
-  insert: function(userId, doc){
+  insert: function(userId, party) {
     return false; // use createParty method instead
   },
-  update: function(userId, docs, fields, modifier){
-    return true; // XXX
+  update: function(userId, parties, fields, modifier) {
+    return false; // use rsvp method instead
   },
-  remove: function(userId, docs){
-    return true;
+  remove: function(userId, parties) {
+    return true; //deny is called later
   }
 });
+
+var attending = function(party) {
+  return _.reduce(party.rsvps, function (memo, rsvp) {
+    if (rsvp.rsvp === 'yes')
+      return memo + 1;
+    else
+      return memo;
+  }, 0);
+}
 
 Parties.deny({
-  remove: function(userId, parties){
-    return _.any(parties, function(party){
-      // Can't delete a party with RSVP's
-      return party.attending > 0;
-    })
+  remove: function(userId, parties) {
+    return _.any(parties, function (party) {
+      return party.owner !== userId || attending(party) > 0;
+    });
   }
 });
-
-/*
-  user
-  party
-  rsvp: String ("yes", "no", "maybe")
-*/
-
-Rsvps = new Meteor.Collection("rsvps");
 
 Meteor.methods({
   // title, description, x, y, public
-  createParty:function(options){
+  // XXX limit a user to a certain number of parties
+  createParty:function(options) {
     options = options || {};
     if (! (typeof options.title === "string" && options.title.length &&
-           typeof options.description === "string" && options.description.length &&
-           typeof options.x === "number" && options.x >=0 && options.x <= 1 && 
-           typeof options.y === "number" && options.y >= 0 && options.y <= 1 ))
+           typeof options.description === "string" && 
+           options.description.length &&
+           typeof options.x === "number" && 
+           options.x >=0 && options.x <= 1 && 
+           typeof options.y === "number" && 
+           options.y >= 0 && options.y <= 1))
+      // XXX should get rid of the error code
       throw new Meteor.Error(400, "Required parameter missing");
+    if (options.title.length > 100)
+      throw new Meteor.Error(413,"Title too long");
+    if (options.description.length > 1000)
+      throw new Meteor.Error(413,"Description too long")
     if (! this.userId)
       throw new Meteor.Error(403, "You must be logged in");
       
-    Parties.insert({
+    return Parties.insert({
       owner: this.userId,
       x: options.x,
       y: options.y,
       title: options.title,
-      description: option.description,
-      attending: 0,
-      public: options.public,
-      canSee: []
+      description: options.description,
+      public: !! options.public,
+      invited: [],
+      rsvps: []
     });
   },
   
-  rsvp: function(partyId, rsvp){
+  invite: function (patyId, userId) {
+    var party = Parties.findOne(partyId);
+    if (! party || party.owner !== this.userId)
+      throw new Meteor.Error(404,"No such party");
+    if (party.public)
+      throw new Meteor.Error(400,
+                             "That party is public. No need to invite people.");
+    if (userId !== paty.owner)
+      Parties.update(partyId, {$addTosSet: {invited: userId}});
+  },
+  
+  rsvp: function(partyId, rsvp) {
     if (! this.userId)
       throw new Meteor.Error(403, "You must be logged in to RSVP");
     if (! _.contains(['yes', 'no', 'maybe'], rsvp))
       throw new Meteor.Error(400, "Invalid RSVP");
+    var party = Parties.findOne(partyId);
+    if (! party)
+      throw new Meteor.Error(404, "No such party")
+    if (! party.public && party.owner !== this.userId && !_.contains(party.invited, this.userId))
+      throw new Meteor.Error(403,"No such party");
     
-    var oldAttendance;
-    var attendance = (rsvp === 'yes') ? 1 : 0;
-    
-    var record = Rsvps.findOne({user: this.userId, party: partyId});
-    if (record){
-      var oldAttendance = (record.rsvp === 'yes') ? 1 : 0;
-      Rsvps.update(record._id, {$set: {rsvp: rsvp}});
+    var rsvpIndex = _.indexOf(_.pluck(party.rsvps, 'user'), this.userId);
+    if (rsvpIndex !== -1) {
+      // update existing rsvp entry
+      if (Meteor.isServer) {
+        // update the appropriate rsvp entry with $
+        Parties.update(
+          {_id: partyId, "rsvps.user": this.userId},
+          {$set: {"rsvps.$.rsvp": rsvp}});
+      } else {
+        // minimongo doesn't yet support $ in modifier. reconstruct
+        // the modifier to be of the form:
+        //   {$set: {"rsvps.<index>.rsvp"}}
+        var modifier = {$set: {}};
+        modifier.$set["rsvps." + rsvpIndex + ".rsvp"] = rsvp;
+        Parties.update(partyId, modifier);
+      }
     } else {
-      oldAttendance = 0;
-      Rsvps.insert({user: this.userId, party: partyId, rsvp: rsvp});
+      // add new rsvp entry
+      Parties.update(
+        partyId,
+        {$push: {rsvps: {user: this.userId, rsvp:rsvp}}});
     }
     
-    Parties.update(partyId, {$inc: {attending: attendance - oldAttendance}});
-    
-    if (! record){
-      record = {user: this.userId, party: partyId}
-    }
   }    
 });
