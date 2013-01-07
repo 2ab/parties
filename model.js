@@ -1,24 +1,23 @@
 /*
   owner: user id
-  x,y: Number (screen coordinates)
+  x, y: Number (screen coordinates)
   title, description: String
   public: Boolean
   invited: list of user id's that it's shared with, not including
     the owner (ignored if public)
   rsvps: XXX document, fields are 'user' and 'rsvp'
 */
-
 Parties = new Meteor.Collection("parties");
 
 Parties.allow({
-  insert: function(userId, party) {
+  insert: function (userId, party) {
     return false; // use createParty method instead
   },
-  update: function(userId, parties, fields, modifier) {
+  update: function (userId, parties, fields, modifier) {
     return false; // use rsvp method instead
   },
-  remove: function(userId, parties) {
-    return true; //deny is called later
+  remove: function (userId, parties) {
+    return true; // deny is called later
   }
 });
 
@@ -29,10 +28,10 @@ var attending = function(party) {
     else
       return memo;
   }, 0);
-}
+};
 
 Parties.deny({
-  remove: function(userId, parties) {
+  remove: function (userId, parties) {
     return _.any(parties, function (party) {
       return party.owner !== userId || attending(party) > 0;
     });
@@ -42,24 +41,24 @@ Parties.deny({
 Meteor.methods({
   // title, description, x, y, public
   // XXX limit a user to a certain number of parties
-  createParty:function(options) {
+  createParty: function (options) {
     options = options || {};
     if (! (typeof options.title === "string" && options.title.length &&
-           typeof options.description === "string" && 
+           typeof options.description === "string" &&
            options.description.length &&
-           typeof options.x === "number" && 
-           options.x >=0 && options.x <= 1 && 
-           typeof options.y === "number" && 
+           typeof options.x === "number" &&
+           options.x >= 0 && options.x <= 1 &&
+           typeof options.y === "number" &&
            options.y >= 0 && options.y <= 1))
       // XXX should get rid of the error code
       throw new Meteor.Error(400, "Required parameter missing");
     if (options.title.length > 100)
-      throw new Meteor.Error(413,"Title too long");
+      throw new Meteor.Error(413, "Title too long");
     if (options.description.length > 1000)
-      throw new Meteor.Error(413,"Description too long")
+      throw new Meteor.Error(413, "Description too long");
     if (! this.userId)
       throw new Meteor.Error(403, "You must be logged in");
-      
+
     return Parties.insert({
       owner: this.userId,
       x: options.x,
@@ -71,19 +70,19 @@ Meteor.methods({
       rsvps: []
     });
   },
-  
+
   invite: function (partyId, userId) {
     var party = Parties.findOne(partyId);
     if (! party || party.owner !== this.userId)
-      throw new Meteor.Error(404,"No such party");
+      throw new Meteor.Error(404, "No such party");
     if (party.public)
       throw new Meteor.Error(400,
                              "That party is public. No need to invite people.");
-    if (userId !== paty.owner)
-      Parties.update(partyId, {$addToSet: {invited: userId}});
+    if (userId !== party.owner)
+      Parties.update(partyId, { $addToSet: { invited: userId } });
   },
-  
-  rsvp: function(partyId, rsvp) {
+
+  rsvp: function (partyId, rsvp) {
     if (! this.userId)
       throw new Meteor.Error(403, "You must be logged in to RSVP");
     if (! _.contains(['yes', 'no', 'maybe'], rsvp))
@@ -92,11 +91,12 @@ Meteor.methods({
     if (! party)
       throw new Meteor.Error(404, "No such party");
     if (! party.public && party.owner !== this.userId && !_.contains(party.invited, this.userId))
-      throw new Meteor.Error(403,"No such party");
-    
+      throw new Meteor.Error(403, "No such party"); // private, but let's not tell this to the user
+
     var rsvpIndex = _.indexOf(_.pluck(party.rsvps, 'user'), this.userId);
     if (rsvpIndex !== -1) {
       // update existing rsvp entry
+
       if (Meteor.isServer) {
         // update the appropriate rsvp entry with $
         Parties.update(
@@ -114,8 +114,7 @@ Meteor.methods({
       // add new rsvp entry
       Parties.update(
         partyId,
-        {$push: {rsvps: {user: this.userId, rsvp:rsvp}}});
+        {$push: {rsvps: {user: this.userId, rsvp: rsvp}}});
     }
-    
-  }    
+  }
 });

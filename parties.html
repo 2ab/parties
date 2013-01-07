@@ -8,54 +8,55 @@
 
 <template name="page">
   {{loginButtons}}
-
-  <h1>All Tomorrow Parties</h1>
+  <h1>All Tomorrow's Parties</h1>
 
   {{#if showCreateDialog}}
     {{> createDialog}}
   {{/if}}
-  
+
   {{#if showInviteDialog}}
     {{> inviteDialog}}
   {{/if}}
-  
+
   <div class="left-panel">
-    {{# if currentUser}}
+    {{#if currentUser}}
       <p>Double click to post a party!</p>
     {{else}}
-      <p>Sign in to post a party</p>
+      <p>Sign in to post a party!</p>
     {{/if}}
     {{> map}}
   </div>
-  
+
   {{> details}}
 </template>
 
 <template name="createDialog">
-  <div class="mask"></div>
+  <div class="mask"> </div>
   <div class="popup">
     Create event<br>
-    Title: <input type="text" class="title" /><br>
+    Title: <input type="text" class="title"><br>
+
     Description<br><textarea class="description"></textarea><br>
-    <input type="checkbox" class="private">Private party<br>
-    <input type="button" value="Add" class="save" />
-    <input type="button" value="Cancel" class="cancel" />
+    <input type="checkbox" class="private">Private party</input><br>
+
+    <input type="button" value="Add" class="save">
+    <input type="button" value="Cancel" class="cancel">
   </div>
 </template>
 
 <template name="inviteDialog">
-  <div class="mask"></div>
+  <div class="mask"> </div>
   <div class="popup">
     Invite people<br>
-    
+
     {{#each uninvited}}
       {{email}}
-      <input type="button" value="Invite" class="invite" />
+      <input type="button" value="Invite" class="invite">
     {{else}}
       Everyone on the site is already invited.
     {{/each}}
-    
-    <input type="button" value="Done" class="close" />
+
+    <input type="button" value="Done" class="close">
   </div>
 </template>
 
@@ -70,43 +71,43 @@
   </div>
 </template>
 
-
 <template name="details">
   <div class="details">
     {{#if party}}
       {{#with party}}
         <h1>{{title}}</h1>
         Posted by {{creatorName}}<br>
-        
+
         {{description}}<br>
-        
+
         {{#if currentUser}}
-          <input type="button" value="I'm going!" class="rsvp_yes" />
-          <input type="button" value="Maybe" class="rsvp_maybe" />
-          <input type="button" value="No" class="rsvp_no" />
+          <input type="button" value="I'm going!" class="rsvp_yes">
+          <input type="button" value="Maybe" class="rsvp_maybe">
+          <input type="button" value="No" class="rsvp_no">
         {{else}}
           Sign in to RSVP
-        {{/if}}<br>
-        
+        {{/if}}
+        <br>
+
         {{#each rsvps}}
           {{rsvpEmail}}: {{rsvpStatus}}<br>
         {{/each}}
-        
+
         {{#if public}}
           Everyone: invited<br>
         {{else}}
           {{#each outstandingInvitations}}
-            {{invitationEmail}}: Invited<br>
+            {{invitationEmail}}: invited<br>
           {{/each}}
           {{#if canInvite}}
-            <input type="button" value="Invite some people" class="invite" /><br>
+            <input type="button" value="Invite some people" class="invite"><br>
           {{/if}}
         {{/if}}
-        
+
         {{#if canRemove}}
           You posted this party and nobody is signed up to go, so if
           you like, you could
-          <a href="#" class="remove">delete this listing</a>
+          <a href="#" class="remove">delete this listing</a>.
         {{/if}}
       {{/with}}
     {{else}}
